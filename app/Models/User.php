@@ -10,6 +10,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\BookRequest;
 
 class User extends Authenticatable
 {
@@ -66,4 +67,21 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isCitizen()
+    {
+        return $this->role === 'citizen';
+    }   
+
+    public function requests()
+    {
+        return $this->hasMany(BookRequest::class);
+    }
+
+    
 }

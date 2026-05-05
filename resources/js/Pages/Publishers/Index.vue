@@ -129,7 +129,7 @@ const indicator = (column) => {
                                 <td class="font-medium">{{ publisher.name }}</td>
                                 <td>
                                     <span
-                                        class="badge"
+                                        class="badge h-max badge-sm"
                                         :class="publisher.logo ? 'badge-success' : 'badge-ghost'"
                                     >
                                         {{ publisher.logo ? 'Com logótipo' : 'Sem logótipo' }}

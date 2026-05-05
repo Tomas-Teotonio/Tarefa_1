@@ -1,7 +1,9 @@
 <script setup>
-import { reactive } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { reactive, ref } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+
+const page = usePage();
 
 const props = defineProps({
     books: Object,
@@ -49,6 +51,20 @@ const indicator = (column) => {
     if (form.sort !== column) return '↕';
     return form.direction === 'asc' ? '↑' : '↓';
 };
+
+
+const loadingBookId = ref(null);
+
+const requestBook = (bookId) => {
+    loadingBookId.value = bookId;
+
+    router.post(route('books.request', bookId), {}, {
+        onFinish: () => {
+            loadingBookId.value = null;
+        }
+    });
+};
+
 </script>
 
 <template>
@@ -67,6 +83,7 @@ const indicator = (column) => {
                         ISBN, nome, editora, autores, bibliografia, capa e preço.
                     </p>
                 </div>
+
                 <a
                     :href="route('books.export', {
                         search: form.search || undefined,
@@ -81,11 +98,12 @@ const indicator = (column) => {
                 </a>
             </div>
         </template>
-        
 
         <div class="space-y-6">
+
             <div class="rounded-3xl border border-base-300 bg-base-100 p-6 shadow-sm">
                 <form class="grid gap-4 md:grid-cols-2 xl:grid-cols-5" @submit.prevent="submit">
+                    
                     <div class="xl:col-span-2">
                         <label class="label">
                             <span class="label-text font-medium">Pesquisar</span>
@@ -125,14 +143,13 @@ const indicator = (column) => {
                     <div class="flex items-end gap-2">
                         <button type="submit" class="btn btn-primary flex-1">Filtrar</button>
                         <button type="button" class="btn btn-outline" @click="reset">Limpar</button>
-                        
                     </div>
-                    
+
                 </form>
 
                 <div class="mt-4 alert alert-info">
                     <span class="text-sm">
-                        A bibliografia está cifrada na base de dados, por isso não entra na pesquisa SQL desta tabela.
+                        A bibliografia está cifrada na base de dados.
                     </span>
                 </div>
             </div>
@@ -147,26 +164,45 @@ const indicator = (column) => {
                                         ISBN {{ indicator('isbn') }}
                                     </button>
                                 </th>
+
+                                <th>Capa</th>
+
                                 <th>
                                     <button class="btn btn-ghost btn-xs" @click="sortBy('name')">
                                         Nome {{ indicator('name') }}
                                     </button>
                                 </th>
+
                                 <th>Editora</th>
                                 <th>Autores</th>
+
                                 <th>
                                     <button class="btn btn-ghost btn-xs" @click="sortBy('price')">
                                         Preço {{ indicator('price') }}
                                     </button>
                                 </th>
+
+                                <th>Estado</th>
+                                <th>Ação</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             <tr v-for="book in books.data" :key="book.id">
                                 <td class="font-medium">{{ book.isbn }}</td>
+
+                                <td>
+                                    <img
+                                        v-if="book.cover_image"
+                                        :src="'/storage/' + book.cover_image"
+                                        class="w-12 h-16 object-cover rounded"
+                                    />
+                                    <span v-else>—</span>
+                                </td>
                                 <td>{{ book.name }}</td>
+
                                 <td>{{ book.publisher?.name ?? '—' }}</td>
+
                                 <td>
                                     <div class="flex flex-wrap gap-1">
                                         <span
@@ -178,7 +214,38 @@ const indicator = (column) => {
                                         </span>
                                     </div>
                                 </td>
+
                                 <td>{{ Number(book.price).toFixed(2) }} €</td>
+
+                                <td>
+                                    <span
+                                        class="badge"
+                                        :class="book.is_available ? 'badge-success' : 'badge-error'"
+                                    >
+                                        {{ book.is_available ? 'Disponível' : 'Indisponível' }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <button
+                                        v-if="book.is_available"
+                                        class="btn btn-sm btn-primary"
+                                        :class="{ 'loading': loadingBookId === book.id }"
+                                        :disabled="loadingBookId === book.id"
+                                        @click="requestBook(book.id)"
+                                    >
+                                        <span v-if="loadingBookId === book.id">
+                                            A processar...
+                                        </span>
+                                        <span v-else>
+                                            Requisitar
+                                        </span>
+                                    </button>
+
+                                    <span v-else class="text-red-500 text-sm font-medium">
+                                        Indisponível
+                                    </span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -201,6 +268,8 @@ const indicator = (column) => {
                     </div>
                 </div>
             </div>
+
         </div>
+
     </AppLayout>
 </template>

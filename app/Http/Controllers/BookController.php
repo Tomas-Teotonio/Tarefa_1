@@ -29,7 +29,13 @@ class BookController extends Controller
         $direction = $validated['direction'] ?? 'asc';
 
         $books = Book::query()
-            ->with(['publisher:id,name', 'authors:id,name'])
+            ->with([
+                'publisher:id,name',
+                'authors:id,name',
+                'requests' => function ($q) {
+                    $q->where('status', 'active');
+                }
+            ])
             ->when($validated['search'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('isbn', 'like', "%{$search}%")
@@ -52,6 +58,10 @@ class BookController extends Controller
             })
             ->orderBy($sort, $direction)
             ->paginate(10)
+            ->through(function ($book) {
+                $book->is_available = $book->requests->isEmpty();
+                return $book;
+            })
             ->withQueryString();
 
         return Inertia::render('Books/Index', [
@@ -68,6 +78,21 @@ class BookController extends Controller
         ]);
     }
 
+    public function show(Book $book)
+    {
+        $book->load([
+            'publisher',
+            'authors',
+            'requests.user'
+        ]);
+
+        $book->is_available = !$book->requests->where('status', 'active')->count();
+
+        return inertia('Books/Show', [
+            'book' => $book
+        ]);
+    }
+
     public function export(Request $request): BinaryFileResponse
     {
         return Excel::download(
@@ -80,5 +105,93 @@ class BookController extends Controller
             ])),
             'books.xlsx'
         );
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'isbn' => 'required',
+            'name' => 'required',
+            'publisher_id' => 'required|exists:publishers,id',
+            'price' => 'required|numeric',
+            'cover_image' => 'nullable|image|max:2048',
+            'authors' => 'array', 
+            'authors.*' => 'exists:authors,id',
+        ]);
+
+        if ($request->hasFile('cover_image')) {
+            $data['cover_image'] = $request->file('cover_image')
+                ->store('books', 'public');
+        }
+
+        $book = Book::create($data);
+
+        $book->authors()->sync($data['authors'] ?? []);
+
+        return redirect()->route('admin.books.index');
+    }
+
+    public function update(Request $request, Book $book)
+{
+    $data = $request->validate([
+        'isbn' => 'required',
+        'name' => 'required',
+        'publisher_id' => 'required|exists:publishers,id',
+        'price' => 'required|numeric',
+        'cover_image' => 'nullable|image|max:2048',
+        'authors' => 'array',
+        'authors.*' => 'exists:authors,id',
+    ]);
+
+    if ($request->hasFile('cover_image')) {
+        $data['cover_image'] = $request->file('cover_image')
+            ->store('books', 'public');
+    } else {
+        unset($data['cover_image']);
+    }
+
+    $book->update($data);
+
+    $book->authors()->sync($data['authors'] ?? []);
+
+    return redirect()->route('admin.books.index');
+}
+
+    public function create()
+    {
+        return inertia('Books/Create', [
+            'publishers' => Publisher::select('id', 'name')->get(),
+            'authors' => Author::select('id', 'name')->get(), 
+        ]);
+    }
+
+    public function edit(Book $book)
+    {
+        $book->load('authors'); 
+
+        return inertia('Books/Edit', [
+            'book' => $book,
+            'publishers' => Publisher::select('id', 'name')->get(),
+            'authors' => Author::select('id', 'name')->get(),
+        ]);
+    }
+
+    public function destroy(Book $book)
+    {
+        $book->delete();
+
+        return redirect()->route('books.index')
+            ->with('success', 'Livro apagado com sucesso!');
+    }
+
+    public function adminIndex()
+    {
+        $books = Book::with(['publisher', 'authors'])
+            ->latest()
+            ->get();
+
+        return inertia('Admin/Books/Index', [
+            'books' => $books
+        ]);
     }
 }
