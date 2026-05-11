@@ -208,7 +208,7 @@ const requestBook = (bookId) => {
                                         <span
                                             v-for="author in book.authors"
                                             :key="author.id"
-                                            class="badge badge-outline"
+                                            class="badge h-max badge-sm badge-outline"
                                         >
                                             {{ author.name }}
                                         </span>

@@ -5,6 +5,7 @@ use App\Http\Controllers\BookController;
 use App\Http\Controllers\PublisherController;
 use App\Http\Controllers\BookRequestController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\GoogleBooksController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -27,6 +28,8 @@ Route::get('/', function () {
     ]);
 });
 
+
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
@@ -35,6 +38,15 @@ Route::middleware([
 
     Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
 
+    Route::get('/google-books/search', [GoogleBooksController::class, 'search'])
+        ->name('google.books.search');
+
+    Route::post('/google-books/import', [GoogleBooksController::class, 'import'])
+        ->name('google.books.import');
+
+    Route::get('/google-books', function () {
+        return Inertia::render('Books/SearchGoogle');
+    });
 
     Route::get('/books', [BookController::class, 'index'])->name('books.index');
     Route::get('/books/export', [BookController::class, 'export'])->name('books.export');
