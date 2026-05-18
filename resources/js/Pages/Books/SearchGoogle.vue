@@ -12,8 +12,11 @@ const page = ref(1)
 const totalItems = ref(0)
 const hasNextPage = ref(false)
 const hasPreviousPage = ref(false)
+const searched = ref(false)
 
 const toast = ref(null)
+
+const minSearchLength = 3
 
 let debounceTimer = null
 
@@ -22,38 +25,56 @@ const showToast = (message, type = 'success') => {
 
     setTimeout(() => {
         toast.value = null
-    }, 3000)
+    }, 4000)
+}
+
+const resetResults = () => {
+    results.value = []
+    totalItems.value = 0
+    page.value = 1
+    hasNextPage.value = false
+    hasPreviousPage.value = false
 }
 
 const search = async (newPage = 1) => {
-    if (!query.value.trim()) {
-        results.value = []
-        totalItems.value = 0
-        page.value = 1
-        hasNextPage.value = false
-        hasPreviousPage.value = false
+    const term = query.value.trim()
+
+    if (term.length < minSearchLength) {
+        searched.value = false
+        resetResults()
         return
     }
 
     loading.value = true
+    searched.value = true
 
     try {
-        const response = await axios.get('/google-books/search', {
+        const response = await axios.get('/api/google-books/search', {
             params: {
-                q: query.value,
+                q: term,
                 page: newPage,
+            },
+            headers: {
+                Accept: 'application/json',
             }
         })
 
-        results.value = response.data.items
-        totalItems.value = response.data.totalItems
-        page.value = response.data.page
-        hasNextPage.value = response.data.hasNextPage
-        hasPreviousPage.value = response.data.hasPreviousPage
+        const payload = response.data
+
+        if (payload.error) {
+            showToast(payload.error, 'error')
+        }
+
+        results.value = payload.items ?? []
+        totalItems.value = payload.totalItems ?? 0
+        page.value = payload.page ?? newPage
+        hasNextPage.value = payload.hasNextPage ?? false
+        hasPreviousPage.value = payload.hasPreviousPage ?? false
 
     } catch (error) {
         console.error(error)
         showToast('Erro ao pesquisar livros na Google Books API.', 'error')
+        resetResults()
     } finally {
         loading.value = false
     }
@@ -62,10 +83,17 @@ const search = async (newPage = 1) => {
 watch(query, () => {
     clearTimeout(debounceTimer)
 
+    const term = query.value.trim()
+
+    if (term.length < minSearchLength) {
+        searched.value = false
+        resetResults()
+        return
+    }
+
     debounceTimer = setTimeout(() => {
-        page.value = 1
         search(1)
-    }, 600)
+    }, 2000)
 })
 
 const nextPage = () => {
@@ -98,18 +126,6 @@ const importBook = (book) => {
     <AppLayout title="Google Books">
         <div class="space-y-6">
 
-            <div
-                v-if="toast"
-                class="toast toast-top toast-end z-50"
-            >
-                <div
-                    class="alert"
-                    :class="toast.type === 'success' ? 'alert-success' : 'alert-error'"
-                >
-                    <span>{{ toast.message }}</span>
-                </div>
-            </div>
-
             <div class="rounded-3xl border border-base-300 bg-base-100 p-6 shadow-sm">
                 <div class="mb-4">
                     <div class="badge badge-primary badge-outline mb-3">
@@ -121,7 +137,7 @@ const importBook = (book) => {
                     </h1>
 
                     <p class="mt-2 text-sm opacity-70">
-                        Aqui podes pesquisar os livros que adoras e importa-los para a nossa base de dados.
+                        Aqui podes pesquisar livros na Google Books API e importá-los para a base de dados.
                     </p>
                 </div>
 
@@ -135,7 +151,7 @@ const importBook = (book) => {
 
                     <button
                         class="btn btn-primary"
-                        :disabled="loading || !query.trim()"
+                        :disabled="loading || query.trim().length < minSearchLength"
                         @click="search(1)"
                     >
                         <span v-if="loading" class="loading loading-spinner loading-sm"></span>
@@ -144,8 +160,27 @@ const importBook = (book) => {
                 </div>
 
                 <p class="mt-3 text-xs opacity-60">
-                    Pesquisa na Google Books API e importa os livros para a base de dados local.
+                    Escreve pelo menos 3 caracteres. A pesquisa é automática, mas com pausa para evitar demasiados pedidos à API.
                 </p>
+            </div>
+
+            <!-- TOAST GLASS -->
+            <div
+                v-if="toast"
+                class="rounded-3xl border border-base-300 bg-base-100/60 p-4 shadow-xl backdrop-blur-xl"
+            >
+                <div class="flex items-center gap-3">
+                    <div
+                        class="badge"
+                        :class="toast.type === 'success' ? 'badge-success' : 'badge-error'"
+                    >
+                        {{ toast.type === 'success' ? 'Sucesso' : 'Aviso' }}
+                    </div>
+
+                    <p class="text-sm">
+                        {{ toast.message }}
+                    </p>
+                </div>
             </div>
 
             <div
@@ -157,11 +192,20 @@ const importBook = (book) => {
             </div>
 
             <div
-                v-if="!loading && query.trim() && results.length === 0"
+                v-if="!loading && searched && query.trim().length >= minSearchLength && results.length === 0"
                 class="rounded-3xl border border-base-300 bg-base-100 p-10 text-center shadow-sm"
             >
                 <p class="opacity-60">
                     Nenhum resultado encontrado.
+                </p>
+            </div>
+
+            <div
+                v-if="!loading && query.trim().length > 0 && query.trim().length < minSearchLength"
+                class="rounded-3xl border border-base-300 bg-base-100 p-10 text-center shadow-sm"
+            >
+                <p class="opacity-60">
+                    Escreve pelo menos 3 caracteres para procurar livros.
                 </p>
             </div>
 

@@ -6,6 +6,8 @@ use App\Http\Controllers\PublisherController;
 use App\Http\Controllers\BookRequestController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\GoogleBooksController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\BookAvailabilityAlertController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -38,9 +40,6 @@ Route::middleware([
 
     Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
 
-    Route::get('/google-books/search', [GoogleBooksController::class, 'search'])
-        ->name('google.books.search');
-
     Route::post('/google-books/import', [GoogleBooksController::class, 'import'])
         ->name('google.books.import');
 
@@ -57,10 +56,19 @@ Route::middleware([
 
     Route::get('/books/{book}', [BookController::class, 'show'])->name('books.show');
 
+    Route::post('/books/{book}/availability-alert', [BookAvailabilityAlertController::class, 'store'])
+        ->name('books.availability-alert.store');
+
     Route::get('/authors', [AuthorController::class, 'index'])->name('authors.index');
     Route::get('/publishers', [PublisherController::class, 'index'])->name('publishers.index');
 
     Route::get('/requests', [BookRequestController::class, 'index'])->name('requests.index');
+
+    Route::get('/requests/{loanRequest}', [BookRequestController::class, 'show'])
+        ->name('requests.show');
+
+    Route::post('/requests/{loanRequest}/reviews', [ReviewController::class, 'store'])
+        ->name('requests.reviews.store');
 
     Route::post('/books/{book}/request', [BookRequestController::class, 'store'])
         ->name('books.request');
@@ -103,6 +111,15 @@ Route::middleware([
 
             Route::post('/users', [UserController::class, 'store'])
                 ->name('admin.users.store');
+
+            Route::get('/reviews', [ReviewController::class, 'index'])
+                ->name('admin.reviews.index');
+
+            Route::get('/reviews/{review}', [ReviewController::class, 'show'])
+                ->name('admin.reviews.show');
+
+            Route::put('/reviews/{review}/status', [ReviewController::class, 'updateStatus'])
+                ->name('admin.reviews.updateStatus');
 
         });
     });

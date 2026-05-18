@@ -1,17 +1,22 @@
-@component('mail::message')
-
-# ⏰ Lembrete de Devolução
+<x-mail::message>
+# Lembrete de devolução
 
 Olá {{ $request->user->name }},
 
-Este é um lembrete de que o livro:
+Este é um lembrete de que o livro abaixo deve ser devolvido amanhã.
 
-📚 **{{ $request->book->name }}**
+<x-mail::panel>
+**Livro:** {{ $request->book->name }}
 
-deve ser devolvido amanhã ({{ \Carbon\Carbon::parse($request->expected_return_date)->format('d/m/Y') }}).
+**Número da requisição:** {{ $request->number }}
 
-Por favor, não se esqueça da devolução.
+**Data prevista de entrega:** {{ \Carbon\Carbon::parse($request->expected_return_date)->format('d/m/Y') }}
+</x-mail::panel>
 
-Obrigado!
+<x-mail::button :url="route('requests.show', $request)">
+Ver detalhe da requisição
+</x-mail::button>
 
-@endcomponent
+Obrigado,<br>
+{{ config('app.name') }}
+</x-mail::message>

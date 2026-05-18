@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+use App\Models\BookAvailabilityAlert;
+use Illuminate\Support\Facades\Auth;
+
 use App\Exports\BooksExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -83,13 +86,29 @@ class BookController extends Controller
         $book->load([
             'publisher',
             'authors',
-            'requests.user'
+            'requests.user',
+            'reviews' => function ($query) {
+                $query->where('status', 'active')->with('user');
+            },
         ]);
 
         $book->is_available = !$book->requests->where('status', 'active')->count();
 
+        $user = Auth::user();
+
+        $hasAvailabilityAlert = false;
+
+        if ($user && $user->isCitizen()) {
+            $hasAvailabilityAlert = BookAvailabilityAlert::where('book_id', $book->id)
+                ->where('user_id', $user->id)
+                ->whereNull('notified_at')
+                ->exists();
+        }
+
         return inertia('Books/Show', [
-            'book' => $book
+            'book' => $book,
+            'relatedBooks' => $this->getRelatedBooks($book),
+            'hasAvailabilityAlert' => $hasAvailabilityAlert,
         ]);
     }
 
@@ -193,5 +212,76 @@ class BookController extends Controller
         return inertia('Admin/Books/Index', [
             'books' => $books
         ]);
+    }
+
+    private function getRelatedBooks(Book $book)
+    {
+        $baseKeywords = $this->extractKeywords($book->bibliography ?? '');
+
+        if (empty($baseKeywords)) {
+            return collect();
+        }
+
+        return Book::query()
+            ->where('id', '!=', $book->id)
+            ->with(['publisher:id,name', 'authors:id,name'])
+            ->get()
+            ->map(function ($candidate) use ($baseKeywords) {
+                $candidateKeywords = $this->extractKeywords($candidate->bibliography ?? '');
+
+                $commonKeywords = array_values(array_intersect($baseKeywords, $candidateKeywords));
+
+                $candidate->relation_score = count($commonKeywords);
+                $candidate->common_keywords = array_slice($commonKeywords, 0, 8);
+
+                return $candidate;
+            })
+            ->filter(function ($candidate) {
+                return $candidate->relation_score > 0;
+            })
+            ->sortByDesc('relation_score')
+            ->take(4)
+            ->values();
+    }
+
+    private function extractKeywords(?string $text): array
+    {
+        if (!$text) {
+            return [];
+        }
+
+        $text = strip_tags($text);
+        $text = html_entity_decode($text);
+        $text = mb_strtolower($text, 'UTF-8');
+
+        $text = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text);
+
+        $words = preg_split('/\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        $stopWords = [
+            'de', 'do', 'da', 'dos', 'das',
+            'e', 'a', 'o', 'os', 'as',
+            'um', 'uma', 'uns', 'umas',
+            'para', 'com', 'sem', 'por',
+            'no', 'na', 'nos', 'nas',
+            'que', 'se', 'ao', 'aos',
+            'ou', 'como', 'mais', 'menos',
+            'sobre', 'este', 'esta', 'estes', 'estas',
+            'isto', 'isso', 'aquele', 'aquela',
+            'the', 'and', 'of', 'to', 'in',
+            'for', 'with', 'on', 'by',
+            'is', 'are', 'from', 'this', 'that',
+        ];
+
+        $keywords = collect($words)
+            ->filter(function ($word) use ($stopWords) {
+                return mb_strlen($word, 'UTF-8') >= 4
+                    && !in_array($word, $stopWords);
+            })
+            ->unique()
+            ->values()
+            ->toArray();
+
+        return $keywords;
     }
 }

@@ -114,7 +114,14 @@ const openProofModal = (request) => {
                 <tbody>
                     <tr v-for="req in requests" :key="req.id">
 
-                        <td>{{ req.number }}</td>
+                        <td>
+                            <a
+                                :href="route('requests.show', req.id)"
+                                class="link link-primary font-medium"
+                            >
+                                {{ req.number }}
+                            </a>
+                        </td>
 
                         <td class="truncate">
                             {{ req.book?.name }}

@@ -34,4 +34,9 @@ class Request extends Model
     {
         return $this->belongsTo(Book::class);
     }
+
+    public function review()
+    {
+        return $this->hasOne(Review::class, 'request_id');
+    }
 }

@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\BookAvailableMail;
+use App\Mail\RequestCreatedMail;
 use App\Models\Book;
+use App\Models\BookAvailabilityAlert;
 use App\Models\Request as BookRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\RequestCreatedMail;
-use App\Models\User;
 
 class BookRequestController extends Controller
 {
@@ -82,9 +84,12 @@ class BookRequestController extends Controller
         $request->number = 'REQ-' . str_pad($request->id, 5, '0', STR_PAD_LEFT);
         $request->save();
 
+        $request->load(['user', 'book']);
+
         Mail::to($user->email)->send(new RequestCreatedMail($request));
 
         $admins = User::where('role', 'admin')->get();
+
         foreach ($admins as $admin) {
             Mail::to($admin->email)->send(new RequestCreatedMail($request));
         }
@@ -115,6 +120,44 @@ class BookRequestController extends Controller
             'user_photo' => $path,
         ]);
 
+        $this->notifyAvailabilityAlerts($request->book_id);
+
         return back()->with('success', 'Livro devolvido com sucesso!');
+    }
+
+    public function show(BookRequest $loanRequest)
+    {
+        $user = Auth::user();
+
+        if ($user->isCitizen() && $loanRequest->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $loanRequest->load([
+            'book.publisher',
+            'book.authors',
+            'user',
+            'review',
+        ]);
+
+        return inertia('Requests/Show', [
+            'request' => $loanRequest,
+        ]);
+    }
+
+    private function notifyAvailabilityAlerts(int $bookId): void
+    {
+        $alerts = BookAvailabilityAlert::with(['book', 'user'])
+            ->where('book_id', $bookId)
+            ->whereNull('notified_at')
+            ->get();
+
+        foreach ($alerts as $alert) {
+            Mail::to($alert->user->email)->send(new BookAvailableMail($alert));
+
+            $alert->update([
+                'notified_at' => now(),
+            ]);
+        }
     }
 }

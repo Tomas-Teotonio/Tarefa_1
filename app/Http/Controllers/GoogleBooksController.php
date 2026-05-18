@@ -27,7 +27,7 @@ class GoogleBooksController extends Controller
         ]);
 
         $books = $this->service->search(
-            query: $request->q,
+            query: $request->input('q'),
             page: (int) $request->input('page', 1),
             maxResults: 9
         );

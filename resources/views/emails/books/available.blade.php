@@ -1,22 +1,18 @@
 <x-mail::message>
-# Nova requisição de livro
+# Livro disponível
 
-Olá {{ $request->user->name }},
+Olá {{ $alert->user->name }},
 
-A tua requisição foi criada com sucesso.
+O livro que tinhas marcado para aviso já se encontra disponível para requisição.
 
 <x-mail::panel>
-**Livro:** {{ $request->book->name }}
+**Livro:** {{ $alert->book->name }}
 
-**Número da requisição:** {{ $request->number }}
-
-**Data da requisição:** {{ \Carbon\Carbon::parse($request->request_date)->format('d/m/Y') }}
-
-**Data prevista de entrega:** {{ \Carbon\Carbon::parse($request->expected_return_date)->format('d/m/Y') }}
+**ISBN:** {{ $alert->book->isbn }}
 </x-mail::panel>
 
 @php
-    $cover = $request->book->cover_image;
+    $cover = $alert->book->cover_image;
     $localCoverPath = null;
 
     if ($cover && !str_starts_with($cover, 'http')) {
@@ -35,8 +31,8 @@ A tua requisição foi criada com sucesso.
 
 @endif
 
-<x-mail::button :url="route('requests.show', $request)">
-Ver detalhe da requisição
+<x-mail::button :url="route('books.show', $alert->book)">
+Ver livro
 </x-mail::button>
 
 Obrigado,<br>
