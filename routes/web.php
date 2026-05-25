@@ -8,6 +8,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\GoogleBooksController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\BookAvailabilityAlertController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\AdminOrderController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -76,6 +79,39 @@ Route::middleware([
     Route::get('/users/{user}', [UserController::class, 'show'])
         ->name('users.show');
 
+    Route::get('/cart', [CartController::class, 'index'])
+    ->name('cart.index');
+
+    Route::post('/books/{book}/cart', [CartController::class, 'store'])
+        ->name('cart.store');
+
+    Route::put('/cart/{cartItem}', [CartController::class, 'update'])
+        ->name('cart.update');
+
+    Route::delete('/cart/{cartItem}', [CartController::class, 'destroy'])
+        ->name('cart.destroy');
+
+    Route::delete('/cart', [CartController::class, 'clear'])
+        ->name('cart.clear');
+
+    Route::get('/checkout/address', [CheckoutController::class, 'address'])
+        ->name('checkout.address');
+
+    Route::post('/checkout/address', [CheckoutController::class, 'storeAddress'])
+        ->name('checkout.address.store');
+
+    Route::get('/checkout/payment/{order}', [CheckoutController::class, 'payment'])
+        ->name('checkout.payment');
+
+    Route::post('/checkout/payment/{order}', [CheckoutController::class, 'startPayment'])
+        ->name('checkout.payment.start');
+
+    Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])
+        ->name('checkout.success');
+
+    Route::get('/checkout/cancel/{order}', [CheckoutController::class, 'cancel'])
+        ->name('checkout.cancel');
+
     Route::middleware('admin')->group(function () {
 
         Route::post('/books', [BookController::class, 'store'])->name('books.store');
@@ -120,6 +156,12 @@ Route::middleware([
 
             Route::put('/reviews/{review}/status', [ReviewController::class, 'updateStatus'])
                 ->name('admin.reviews.updateStatus');
+
+            Route::get('/orders', [AdminOrderController::class, 'index'])
+                ->name('admin.orders.index');
+
+            Route::get('/orders/{order}', [AdminOrderController::class, 'show'])
+                ->name('admin.orders.show');
 
         });
     });

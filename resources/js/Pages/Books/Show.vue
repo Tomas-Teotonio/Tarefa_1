@@ -14,6 +14,8 @@ const user = page.props.auth.user
 
 const loadingRequest = ref(false)
 const loadingAlert = ref(false)
+const loadingCart = ref(false)
+
 const hasAlert = ref(props.hasAvailabilityAlert ?? false)
 
 const formatDate = (date) => {
@@ -44,6 +46,18 @@ const createAvailabilityAlert = () => {
 
         onFinish: () => {
             loadingAlert.value = false
+        }
+    })
+}
+
+const addToCart = () => {
+    loadingCart.value = true
+
+    router.post(route('cart.store', props.book.id), {}, {
+        preserveScroll: true,
+
+        onFinish: () => {
+            loadingCart.value = false
         }
     })
 }
@@ -135,24 +149,46 @@ const createAvailabilityAlert = () => {
                             </p>
                         </div>
 
-                        <div class="mt-6">
+                        <!-- AÇÕES -->
+                        <div class="mt-6 flex flex-wrap gap-2">
+
+                            <!-- Carrinho -->
                             <button
-                                v-if="book.is_available"
-                                class="btn btn-primary"
-                                :disabled="loadingRequest"
-                                @click="requestBook"
+                                v-if="user.role === 'citizen'"
+                                class="btn btn-secondary"
+                                :disabled="loadingCart"
+                                @click="addToCart"
                             >
                                 <span
-                                    v-if="loadingRequest"
+                                    v-if="loadingCart"
                                     class="loading loading-spinner loading-sm"
                                 ></span>
 
                                 <span v-else>
-                                    Requisitar Livro
+                                    Adicionar ao carrinho
                                 </span>
                             </button>
 
-                            <div v-else class="flex flex-wrap gap-2">
+                            <!-- Requisição -->
+                            <template v-if="book.is_available">
+                                <button
+                                    class="btn btn-primary"
+                                    :disabled="loadingRequest"
+                                    @click="requestBook"
+                                >
+                                    <span
+                                        v-if="loadingRequest"
+                                        class="loading loading-spinner loading-sm"
+                                    ></span>
+
+                                    <span v-else>
+                                        Requisitar Livro
+                                    </span>
+                                </button>
+                            </template>
+
+                            <!-- Livro indisponível + alerta -->
+                            <template v-else>
                                 <button class="btn btn-disabled">
                                     Livro indisponível
                                 </button>
@@ -179,7 +215,7 @@ const createAvailabilityAlert = () => {
                                 >
                                     ✔ Vais ser avisado
                                 </button>
-                            </div>
+                            </template>
                         </div>
                     </div>
                 </div>

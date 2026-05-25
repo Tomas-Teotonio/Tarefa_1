@@ -11,3 +11,5 @@ Artisan::command('inspire', function () {
 
 
 Schedule::command('reminders:send')->daily();
+
+Schedule::command('cart:send-abandoned-emails')->everyFiveMinutes();
