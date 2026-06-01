@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Book;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class GoogleBooksService
 {
@@ -12,12 +13,12 @@ class GoogleBooksService
     {
         $query = trim($query);
 
+        $page = max($page, 1);
+        $maxResults = min(max($maxResults, 1), 40);
+
         if ($query === '') {
             return $this->emptyResponse($page, $maxResults);
         }
-
-        $page = max($page, 1);
-        $maxResults = min(max($maxResults, 1), 40);
 
         $startIndex = ($page - 1) * $maxResults;
 
@@ -30,17 +31,24 @@ class GoogleBooksService
         }
 
         try {
+            $params = [
+                'q' => $query,
+                'startIndex' => $startIndex,
+                'maxResults' => $maxResults,
+                'printType' => 'books',
+            ];
+
+            if (config('services.google_books.key')) {
+                $params['key'] = config('services.google_books.key');
+            }
+
             $response = Http::timeout(15)
+                ->retry(2, 500)
                 ->acceptJson()
                 ->withHeaders([
                     'User-Agent' => config('app.name') . '/1.0',
                 ])
-                ->get('https://www.googleapis.com/books/v1/volumes', [
-                    'q' => $query,
-                    'startIndex' => $startIndex,
-                    'maxResults' => $maxResults,
-                    'printType' => 'books',
-                ]);
+                ->get('https://www.googleapis.com/books/v1/volumes', $params);
 
             if ($response->status() === 429) {
                 return array_merge(
@@ -53,6 +61,11 @@ class GoogleBooksService
             }
 
             if (!$response->successful()) {
+                Log::warning('Google Books API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
                 return array_merge(
                     $this->emptyResponse($page, $maxResults),
                     [
@@ -109,6 +122,10 @@ class GoogleBooksService
             return $result;
 
         } catch (\Throwable $e) {
+            Log::error('Google Books API exception', [
+                'message' => $e->getMessage(),
+            ]);
+
             return array_merge(
                 $this->emptyResponse($page, $maxResults),
                 [

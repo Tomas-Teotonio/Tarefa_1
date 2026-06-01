@@ -11,6 +11,7 @@ use App\Http\Controllers\BookAvailabilityAlertController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\ActivityLogController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -162,6 +163,9 @@ Route::middleware([
 
             Route::get('/orders/{order}', [AdminOrderController::class, 'show'])
                 ->name('admin.orders.show');
+            
+            Route::get('/logs', [ActivityLogController::class, 'index'])
+                ->name('admin.logs.index');
 
         });
     });

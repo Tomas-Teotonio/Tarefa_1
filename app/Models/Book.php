@@ -18,6 +18,7 @@ class Book extends Model
         'bibliography',
         'cover_image',
         'price',
+        'stock',
     ];
 
     protected function casts(): array
@@ -25,6 +26,7 @@ class Book extends Model
         return [
             'price' => 'decimal:2',
             'bibliography' => 'encrypted',
+            'stock' => 'integer',
         ];
     }
 
@@ -45,9 +47,11 @@ class Book extends Model
 
     public function isAvailable()
     {
-        return !$this->requests()
+        $activeRequests = $this->requests()
             ->where('status', 'active')
-            ->exists();
+            ->count();
+
+        return $this->stock > 0 && $activeRequests < $this->stock;
     }
 
     public function reviews()

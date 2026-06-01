@@ -103,6 +103,14 @@ onMounted(() => {
                             >
                                 Editoras
                             </Link>
+
+                            <Link
+                                v-if="$page.props.auth.user.role === 'admin'"
+                                :href="route('admin.logs.index')"
+                                :class="route().current('admin.logs.*') ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-ghost'"
+                            >
+                                Logs
+                            </Link>
                         </div>
 
                         <div class="flex items-center gap-3">
