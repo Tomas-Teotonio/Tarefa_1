@@ -14,6 +14,9 @@ use App\Models\BookRequest;
 use App\Models\CartItem;
 use App\Models\Order;
 
+use App\Models\ChatRoom;
+use App\Models\ChatMessage;
+
 class User extends Authenticatable
 {
     use HasApiTokens;
@@ -98,5 +101,27 @@ class User extends Authenticatable
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function chatRooms()
+    {
+        return $this->belongsToMany(ChatRoom::class)
+            ->withPivot('invited_by')
+            ->withTimestamps();
+    }
+
+    public function sentChatMessages()
+    {
+        return $this->hasMany(ChatMessage::class, 'sender_id');
+    }
+
+    public function receivedChatMessages()
+    {
+        return $this->hasMany(ChatMessage::class, 'receiver_id');
+    }
+
+    public function isActive()
+    {
+        return $this->status === 'active';
     }
 }

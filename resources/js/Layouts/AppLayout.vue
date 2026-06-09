@@ -105,6 +105,13 @@ onMounted(() => {
                             </Link>
 
                             <Link
+                                :href="route('chat.index')"
+                                :class="route().current('chat.*') ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-ghost'"
+                            >
+                                Chat
+                            </Link>
+
+                            <Link
                                 v-if="$page.props.auth.user.role === 'admin'"
                                 :href="route('admin.logs.index')"
                                 :class="route().current('admin.logs.*') ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-ghost'"

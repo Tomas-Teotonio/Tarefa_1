@@ -12,6 +12,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\ChatController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -113,6 +114,36 @@ Route::middleware([
     Route::get('/checkout/cancel/{order}', [CheckoutController::class, 'cancel'])
         ->name('checkout.cancel');
 
+
+    Route::get('/chat', [ChatController::class, 'index'])
+        ->name('chat.index');
+
+    Route::middleware('admin')->group(function () {
+        Route::get('/chat/rooms/create', [ChatController::class, 'createRoom'])
+            ->name('chat.rooms.create');
+
+        Route::post('/chat/rooms', [ChatController::class, 'storeRoom'])
+            ->name('chat.rooms.store');
+    });
+
+    Route::get('/chat/direct/{user}', [ChatController::class, 'direct'])
+        ->name('chat.direct');
+
+    Route::get('/chat/direct/{user}/messages', [ChatController::class, 'directMessages'])
+        ->name('chat.direct.messages.index');
+
+    Route::post('/chat/direct/{user}/messages', [ChatController::class, 'storeDirectMessage'])
+        ->name('chat.direct.messages.store');
+
+    Route::get('/chat/rooms/{room}', [ChatController::class, 'room'])
+        ->name('chat.room');
+
+    Route::get('/chat/rooms/{room}/messages', [ChatController::class, 'roomMessages'])
+        ->name('chat.room.messages.index');
+
+    Route::post('/chat/rooms/{room}/messages', [ChatController::class, 'storeRoomMessage'])
+        ->name('chat.room.messages.store');
+
     Route::middleware('admin')->group(function () {
 
         Route::post('/books', [BookController::class, 'store'])->name('books.store');
@@ -124,6 +155,7 @@ Route::middleware([
         Route::delete('/books/{book}', [BookController::class, 'destroy'])->name('books.destroy');
 
         Route::resource('authors', AuthorController::class)->except(['index', 'show']);
+
         Route::resource('publishers', PublisherController::class)->except(['index', 'show']);
 
         Route::post('/requests/{request}/return', [BookRequestController::class, 'return'])
