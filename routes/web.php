@@ -13,6 +13,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\AiChatController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -143,6 +144,27 @@ Route::middleware([
 
     Route::post('/chat/rooms/{room}/messages', [ChatController::class, 'storeRoomMessage'])
         ->name('chat.room.messages.store');
+
+    Route::get('/ai-chat', [AiChatController::class, 'index'])
+        ->name('ai-chat.index');
+
+    Route::post('/ai-chat/stream', [AiChatController::class, 'stream'])
+        ->name('ai-chat.stream');
+
+    Route::post('/ai-chat', [AiChatController::class, 'store'])
+        ->name('ai-chat.store');
+
+    Route::post('/ai-chat/{conversation}/messages', [AiChatController::class, 'storeMessage'])
+        ->name('ai-chat.messages.store');
+
+    Route::delete('/ai-chat/{conversation}', [AiChatController::class, 'destroy'])
+        ->name('ai-chat.destroy');
+
+    Route::get('/ai-chat/{conversation}', [AiChatController::class, 'show'])
+        ->name('ai-chat.show');
+
+    Route::put('/ai-chat/{conversation}/settings', [AiChatController::class, 'updateSettings'])
+        ->name('ai-chat.settings.update');
 
     Route::middleware('admin')->group(function () {
 

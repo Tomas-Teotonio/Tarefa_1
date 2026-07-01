@@ -41,4 +41,10 @@ return [
         'key' => env('GOOGLE_BOOKS_API_KEY'),
     ],
 
+    'openrouter' => [
+        'key' => env('OPENROUTER_API_KEY'),
+        'site_url' => env('OPENROUTER_SITE_URL', env('APP_URL')),
+        'app_name' => env('OPENROUTER_APP_NAME', env('APP_NAME', 'Laravel')),
+    ],
+
 ];

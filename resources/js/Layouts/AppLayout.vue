@@ -112,6 +112,13 @@ onMounted(() => {
                             </Link>
 
                             <Link
+                                :href="route('ai-chat.index')"
+                                :class="route().current('ai-chat.*') ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-ghost'"
+                            >
+                                AI Chat
+                            </Link>
+
+                            <Link
                                 v-if="$page.props.auth.user.role === 'admin'"
                                 :href="route('admin.logs.index')"
                                 :class="route().current('admin.logs.*') ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-ghost'"
