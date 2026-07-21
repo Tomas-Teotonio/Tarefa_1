@@ -14,13 +14,18 @@ use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\AiChatController;
+use App\Http\Controllers\AiPromptController;
+use App\Http\Controllers\AiMessageCommentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\AiChatShareController;
 
 use App\Models\Author;
 use App\Models\Book;
 use App\Models\Publisher;
+
+use App\Http\Controllers\AiChatExportController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -36,6 +41,8 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/shared/ai-chat/{token}', [AiChatShareController::class, 'show'])
+    ->name('ai-chat.shared.show');
 
 
 Route::middleware([
@@ -151,6 +158,9 @@ Route::middleware([
     Route::post('/ai-chat/stream', [AiChatController::class, 'stream'])
         ->name('ai-chat.stream');
 
+    Route::post('/ai-chat/attachments/inspect', [AiChatController::class, 'inspectAttachment'])
+        ->name('ai-chat.attachments.inspect');
+
     Route::post('/ai-chat', [AiChatController::class, 'store'])
         ->name('ai-chat.store');
 
@@ -160,11 +170,54 @@ Route::middleware([
     Route::delete('/ai-chat/{conversation}', [AiChatController::class, 'destroy'])
         ->name('ai-chat.destroy');
 
+    Route::patch('/ai-chat/{conversation}/pin', [AiChatController::class, 'togglePin'])
+        ->name('ai-chat.pin');
+
+    Route::get('/ai-chat/search', [AiChatController::class, 'search'])
+        ->name('ai-chat.search');
+
+    Route::post('/ai-chat/{conversation}/shares', [AiChatShareController::class, 'store'])
+        ->name('ai-chat.shares.store');
+
+    Route::delete('/ai-chat/shares/{share}', [AiChatShareController::class, 'destroy'])
+        ->name('ai-chat.shares.destroy');
+
+    Route::get('/ai-chat/{conversation}/export/markdown', [AiChatExportController::class, 'markdown'])
+        ->name('ai-chat.export.markdown');
+
+    Route::get('/ai-chat/{conversation}/export/pdf', [AiChatExportController::class, 'pdf'])
+        ->name('ai-chat.export.pdf');
+
     Route::get('/ai-chat/{conversation}', [AiChatController::class, 'show'])
         ->name('ai-chat.show');
 
     Route::put('/ai-chat/{conversation}/settings', [AiChatController::class, 'updateSettings'])
         ->name('ai-chat.settings.update');
+
+    Route::post(
+        '/ai-messages/{message}/comments',
+        [AiMessageCommentController::class, 'store']
+    )->name('ai-message-comments.store');
+
+    Route::put(
+        '/ai-message-comments/{comment}',
+        [AiMessageCommentController::class, 'update']
+    )->name('ai-message-comments.update');
+
+    Route::delete(
+        '/ai-message-comments/{comment}',
+        [AiMessageCommentController::class, 'destroy']
+    )->name('ai-message-comments.destroy');
+
+
+    Route::post('/ai-prompts', [AiPromptController::class, 'store'])
+        ->name('ai-prompts.store');
+
+    Route::put('/ai-prompts/{prompt}', [AiPromptController::class, 'update'])
+        ->name('ai-prompts.update');
+
+    Route::delete('/ai-prompts/{prompt}', [AiPromptController::class, 'destroy'])
+        ->name('ai-prompts.destroy');
 
     Route::middleware('admin')->group(function () {
 

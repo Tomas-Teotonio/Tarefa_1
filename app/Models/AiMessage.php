@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AiMessage extends Model
 {
@@ -20,4 +21,13 @@ class AiMessage extends Model
     {
         return $this->belongsTo(AiConversation::class, 'ai_conversation_id');
     }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(
+            AiMessageComment::class,
+            'ai_message_id'
+        );
+    }
+    
 }

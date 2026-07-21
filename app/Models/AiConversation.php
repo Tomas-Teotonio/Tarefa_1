@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\AiConversationShare;
 
 class AiConversation extends Model
 {
@@ -15,11 +17,13 @@ class AiConversation extends Model
         'model_id',
         'temperature',
         'max_tokens',
+        'pinned_at',
     ];
 
     protected $casts = [
         'temperature' => 'decimal:2',
         'max_tokens' => 'integer',
+        'pinned_at' => 'datetime',
     ];
 
     public function user()
@@ -30,5 +34,10 @@ class AiConversation extends Model
     public function messages()
     {
         return $this->hasMany(AiMessage::class);
+    }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(AiConversationShare::class);
     }
 }

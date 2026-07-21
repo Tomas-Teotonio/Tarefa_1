@@ -7,12 +7,14 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\BookRequest;
 use App\Models\CartItem;
 use App\Models\Order;
+use App\Models\AiPrompt;
 
 use App\Models\ChatRoom;
 use App\Models\ChatMessage;
@@ -128,5 +130,15 @@ class User extends Authenticatable
     public function aiConversations()
     {
         return $this->hasMany(\App\Models\AiConversation::class);
+    }
+
+    public function aiPrompts(): HasMany
+    {
+        return $this->hasMany(AiPrompt::class);
+    }
+
+    public function aiMessageComments(): HasMany
+    {
+        return $this->hasMany(AiMessageComment::class);
     }
 }
